@@ -4,59 +4,17 @@
 //! "Without" / "Except" exclusion-rule tables.
 
 use dioxus::prelude::*;
-use serde::{Deserialize, Serialize};
 
-const DEFAULT_SYSTEMS: usize = 3;
-
-// ── Data types ────────────────────────────────────────────────────────────────
-
-/// Per-system configuration row (mirrors `SettingsDialog::SystemConfigData`).
-#[derive(Clone, PartialEq, Default, Serialize, Deserialize)]
-pub struct SystemConfigData {
-    pub name: String,
-    pub source: String,
-    pub destination: String,
-    pub git: String,
-    pub backup: String,
-    pub assign: String,
-}
-
-impl SystemConfigData {
-    fn with_default_name(index: usize) -> Self {
-        Self {
-            name: format!("System {}", index + 1),
-            ..Default::default()
-        }
-    }
-}
-
-/// Everything the parent receives when the user clicks Save.
-#[derive(Clone, Default)]
-pub struct SettingsData {
-    pub username: String,
-    pub api_url: String,
-    pub telegram_token: String,
-    pub telegram_chat_id: String,
-    pub notifications_enabled: bool,
-    pub systems: Vec<SystemConfigData>,
-    /// Rows × columns (one column per system).
-    pub without_rows: Vec<Vec<String>>,
-    pub except_rows: Vec<Vec<String>>,
-}
-
-// ── Remote-API response shape ─────────────────────────────────────────────────
-
-#[derive(Deserialize)]
-struct RulesApiResponse {
-    without: Option<Vec<String>>,
-    except: Option<Vec<String>>,
-}
+use crate::core::{
+    rules::{build_default_except, build_default_without},
+    settings::{SettingsData, SystemConfigData, DEFAULT_SYSTEMS},
+};
+use crate::services::rules_api;
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 #[component]
 pub fn SettingsDialog(
-    // Initial values passed from the parent
     username: String,
     api_url: String,
     telegram_token: String,
@@ -65,7 +23,6 @@ pub fn SettingsDialog(
     systems: Vec<SystemConfigData>,
     without_rows: Vec<Vec<String>>,
     except_rows: Vec<Vec<String>>,
-    // Callbacks
     on_save: EventHandler<SettingsData>,
     on_cancel: EventHandler<()>,
 ) -> Element {
@@ -107,12 +64,10 @@ pub fn SettingsDialog(
     // ── API error/status message ──────────────────────────────────────────────
     let mut api_status: Signal<Option<String>> = use_signal(|| None);
 
-    // ── Helpers (closures) ────────────────────────────────────────────────────
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
-    // Return system count at call time
     let sys_count = move || sys_list.read().len();
 
-    // Build a settings snapshot for the save callback
     let build_settings = move || SettingsData {
         username: username_input.read().clone(),
         api_url: api_url_input.read().clone(),
@@ -130,35 +85,26 @@ pub fn SettingsDialog(
         let count = sys_count();
 
         spawn(async move {
-            match reqwest::get(&url).await {
-                Err(e) => {
-                    api_status.set(Some(format!("Network error: {e}")));
+            match rules_api::fetch_rules(&url, count).await {
+                Err(msg) => {
+                    api_status.set(Some(msg));
                 }
-                Ok(resp) => match resp.json::<RulesApiResponse>().await {
-                    Err(e) => {
-                        api_status.set(Some(format!("JSON parse error: {e}")));
+                Ok(rules) => {
+                    let mut updated = false;
+                    if let Some(rows) = rules.without {
+                        without.set(rows);
+                        updated = true;
                     }
-                    Ok(data) => {
-                        let mut updated = false;
-                        if let Some(arr) = data.without {
-                            if !arr.is_empty() {
-                                without.set(rules_from_vec(&arr, count));
-                                updated = true;
-                            }
-                        }
-                        if let Some(arr) = data.except {
-                            if !arr.is_empty() {
-                                except.set(rules_from_vec(&arr, count));
-                                updated = true;
-                            }
-                        }
-                        if updated {
-                            api_status.set(Some("Rules loaded from API.".into()));
-                        } else {
-                            api_status.set(Some("No valid rules in API response.".into()));
-                        }
+                    if let Some(rows) = rules.except {
+                        except.set(rows);
+                        updated = true;
                     }
-                },
+                    api_status.set(Some(if updated {
+                        "Rules loaded from API.".into()
+                    } else {
+                        "No valid rules in API response.".into()
+                    }));
+                }
             }
         });
     };
@@ -172,11 +118,9 @@ pub fn SettingsDialog(
                 class: "dialog",
                 style: "min-width: 1000px; max-height: 90vh;",
 
-                // ── Scrollable body ──────────────────────────────────────────
                 div {
                     class: "dialog-body",
 
-                    // ── User & Telegram group ────────────────────────────────
                     GroupBox {
                         title: "User & Telegram",
                         div {
@@ -208,7 +152,6 @@ pub fn SettingsDialog(
                                 value: "{chat_id_input}",
                                 oninput: move |e| chat_id_input.set(e.value()),
                             }
-                            // Notifications checkbox spans full width
                             div {
                                 style: "grid-column: span 4; margin-top: 4px;",
                                 label {
@@ -224,10 +167,8 @@ pub fn SettingsDialog(
                         }
                     }
 
-                    // ── Systems Configuration group ──────────────────────────
                     GroupBox {
                         title: "Systems Configuration",
-                        // Add / Remove buttons
                         div {
                             class: "system-row-buttons",
                             button {
@@ -247,14 +188,12 @@ pub fn SettingsDialog(
                                         sys_list.write().pop();
                                         without.write().iter_mut().for_each(|r| { r.pop(); });
                                         except.write().iter_mut().for_each(|r| { r.pop(); });
-                                        // Keep at least 1 column in every row
                                     }
                                 },
                                 "Remove Last System"
                             }
                         }
 
-                        // System rows
                         div {
                             class: "system-rows",
                             for (idx, sys) in sys_list.read().iter().enumerate() {
@@ -263,16 +202,13 @@ pub fn SettingsDialog(
                                     index: idx,
                                     data: sys.clone(),
                                     on_change: move |updated: SystemConfigData| {
-                                        // Sync group-box title live as name changes
                                         sys_list.write()[idx] = updated;
-                                        // Rebuild table column headers by re-rendering (reactive)
                                     },
                                 }
                             }
                         }
                     }
 
-                    // ── Without group ────────────────────────────────────────
                     GroupBox {
                         title: "Without",
                         RuleTable {
@@ -308,7 +244,6 @@ pub fn SettingsDialog(
                         }
                     }
 
-                    // ── Except group ─────────────────────────────────────────
                     GroupBox {
                         title: "Except",
                         RuleTable {
@@ -344,7 +279,6 @@ pub fn SettingsDialog(
                         }
                     }
 
-                    // API status message
                     if let Some(msg) = api_status.read().as_deref() {
                         p {
                             style: "color: #80BFFF; font-size: 12px; margin-top: 4px;",
@@ -353,7 +287,6 @@ pub fn SettingsDialog(
                     }
                 }
 
-                // ── Footer buttons ───────────────────────────────────────────
                 div {
                     class: "dialog-footer",
                     button {
@@ -369,7 +302,6 @@ pub fn SettingsDialog(
                 }
             }
 
-            // ── "Add System" mini-dialog ─────────────────────────────────────
             if *show_add_dialog.read() {
                 div {
                     class: "mini-dialog-overlay",
@@ -394,7 +326,6 @@ pub fn SettingsDialog(
                                             name: name.clone(),
                                             ..Default::default()
                                         });
-                                        // Append an empty column to every existing row
                                         without.write().iter_mut().for_each(|r| r.push(String::new()));
                                         except.write().iter_mut().for_each(|r| r.push(String::new()));
                                     }
@@ -415,7 +346,7 @@ pub fn SettingsDialog(
     }
 }
 
-// ── GroupBox helper component ─────────────────────────────────────────────────
+// ── GroupBox ──────────────────────────────────────────────────────────────────
 
 #[component]
 fn GroupBox(title: String, children: Element) -> Element {
@@ -428,7 +359,7 @@ fn GroupBox(title: String, children: Element) -> Element {
     }
 }
 
-// ── SystemRow component ───────────────────────────────────────────────────────
+// ── SystemRow ─────────────────────────────────────────────────────────────────
 /// Renders one system's configuration fields (mirrors `createSystemRowWidget`).
 
 #[component]
@@ -494,7 +425,7 @@ fn SystemRow(
     }
 }
 
-// ── RuleTable component ───────────────────────────────────────────────────────
+// ── RuleTable ─────────────────────────────────────────────────────────────────
 /// Editable table whose columns map to systems (mirrors the Without / Except tables).
 
 #[component]
@@ -533,29 +464,4 @@ fn RuleTable(rows: Signal<Vec<Vec<String>>>, headers: Vec<String>) -> Element {
             }
         }
     }
-}
-
-// ── Default data helpers (mirrors loadWithoutDefaults / loadExceptDefaults) ───
-
-fn build_default_without(cols: usize) -> Vec<Vec<String>> {
-    ["config", "config/include", "config/include/lang", "config/include/title"]
-        .iter()
-        .map(|&s| vec![s.to_string(); cols])
-        .collect()
-}
-
-fn build_default_except(cols: usize) -> Vec<Vec<String>> {
-    ["content", ".git", ".idea", "index.php"]
-        .iter()
-        .map(|&s| vec![s.to_string(); cols])
-        .collect()
-}
-
-/// Converts a flat list of rule strings into a rows×cols table
-/// (mirrors `SettingsDialog::rulesFromJson`).
-fn rules_from_vec(entries: &[String], cols: usize) -> Vec<Vec<String>> {
-    entries
-        .iter()
-        .map(|entry| vec![entry.clone(); cols.max(1)])
-        .collect()
 }

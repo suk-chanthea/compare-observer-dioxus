@@ -10,106 +10,9 @@
 //! The header checkbox mirrors `CheckBoxHeader`: Checked when all rows are
 //! checked, Unchecked when none, visually indeterminate when some are checked.
 
-use chrono::Local;
 use dioxus::prelude::*;
 
-// ── Data model ────────────────────────────────────────────────────────────────
-
-/// A single entry in the watched-files table.
-#[derive(Clone, PartialEq)]
-pub struct FileEntry {
-    pub path: String,
-    pub status: String,
-    pub modified: String,
-    pub checked: bool,
-    /// Baseline content for diff viewing (`None` = no baseline captured yet).
-    pub content: Option<String>,
-}
-
-impl FileEntry {
-    pub fn new(path: impl Into<String>, status: impl Into<String>) -> Self {
-        Self {
-            path: path.into(),
-            status: status.into(),
-            modified: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
-            checked: true,
-            content: None,
-        }
-    }
-}
-
-// ── Header checkbox state ─────────────────────────────────────────────────────
-
-#[derive(Clone, Copy, PartialEq)]
-enum CheckState {
-    Unchecked,
-    Checked,
-    Indeterminate,
-}
-
-impl CheckState {
-    fn from_entries(entries: &[FileEntry]) -> Self {
-        if entries.is_empty() {
-            return Self::Unchecked;
-        }
-        let checked_count = entries.iter().filter(|e| e.checked).count();
-        match checked_count {
-            0 => Self::Unchecked,
-            n if n == entries.len() => Self::Checked,
-            _ => Self::Indeterminate,
-        }
-    }
-}
-
-// ── Public API helpers (usable by parent component) ───────────────────────────
-
-/// Add or update a file entry. Mirrors `addFileEntry` / `updateFileEntry`.
-pub fn upsert_entry(entries: &mut Vec<FileEntry>, path: &str, status: &str) {
-    if let Some(e) = entries.iter_mut().find(|e| e.path == path) {
-        e.status = status.to_string();
-        e.modified = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
-    } else {
-        entries.push(FileEntry::new(path, status));
-    }
-}
-
-/// Remove a file entry by path. Mirrors `removeFileEntry`.
-pub fn remove_entry(entries: &mut Vec<FileEntry>, path: &str) {
-    entries.retain(|e| e.path != path);
-}
-
-/// Return all checked file paths. Mirrors `getCheckedFileKeys`.
-pub fn checked_paths(entries: &[FileEntry]) -> Vec<String> {
-    entries
-        .iter()
-        .filter(|e| e.checked)
-        .map(|e| e.path.clone())
-        .collect()
-}
-
-/// Uncheck all entries whose paths are in `paths`. Mirrors `uncheckFileKeys`.
-pub fn uncheck_paths(entries: &mut Vec<FileEntry>, paths: &[String]) {
-    for e in entries.iter_mut() {
-        if paths.contains(&e.path) {
-            e.checked = false;
-        }
-    }
-}
-
-/// Remove all unchecked entries, returning the removed paths.
-/// Mirrors `removeUncheckedFiles`.
-pub fn remove_unchecked(entries: &mut Vec<FileEntry>) -> Vec<String> {
-    let mut removed = Vec::new();
-    entries.retain(|e| {
-        if e.checked {
-            true
-        } else {
-            removed.push(e.path.clone());
-            false
-        }
-    });
-    removed
-}
+use crate::core::file_entry::{CheckState, FileEntry};
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -118,7 +21,6 @@ pub fn FileWatcherTable(
     entries: Signal<Vec<FileEntry>>,
     on_view_diff: EventHandler<String>,
 ) -> Element {
-    // Derived header checkbox state
     let header_state = use_memo(move || CheckState::from_entries(&entries.read()));
 
     rsx! {
@@ -127,7 +29,6 @@ pub fn FileWatcherTable(
             table {
                 class: "fw-table",
 
-                // ── Column widths ─────────────────────────────────────────────
                 colgroup {
                     col { style: "width: 34px;" }
                     col { style: "width: auto;" }
@@ -136,12 +37,10 @@ pub fn FileWatcherTable(
                     col { style: "width: 80px;" }
                 }
 
-                // ── Header ────────────────────────────────────────────────────
                 thead {
                     tr {
                         th {
                             class: "fw-col-check",
-                            // Header checkbox — toggles all rows
                             HeaderCheckbox {
                                 state: *header_state.read(),
                                 on_click: move |_| {
@@ -157,7 +56,6 @@ pub fn FileWatcherTable(
                     }
                 }
 
-                // ── Body ──────────────────────────────────────────────────────
                 tbody {
                     for (idx, entry) in entries.read().iter().enumerate() {
                         FileRow {
@@ -182,15 +80,14 @@ pub fn FileWatcherTable(
 
 // ── HeaderCheckbox ─────────────────────────────────────────────────────────────
 /// Custom header checkbox rendered as a styled div.
-/// Mirrors `CheckBoxHeader::paintSection`: blue-fill when checked,
-/// dark-fill + blue-border + dash when indeterminate, dark-fill when unchecked.
+/// Mirrors `CheckBoxHeader::paintSection`.
 
 #[component]
 fn HeaderCheckbox(state: CheckState, on_click: EventHandler<()>) -> Element {
     let (bg, border) = match state {
-        CheckState::Checked      => ("#0B57D0", "#0B57D0"),
+        CheckState::Checked       => ("#0B57D0", "#0B57D0"),
         CheckState::Indeterminate => ("#2A2A2A", "#0B57D0"),
-        CheckState::Unchecked    => ("#2A2A2A", "#555555"),
+        CheckState::Unchecked     => ("#2A2A2A", "#555555"),
     };
 
     rsx! {
@@ -209,7 +106,6 @@ fn HeaderCheckbox(state: CheckState, on_click: EventHandler<()>) -> Element {
             ",
             onclick: move |_| on_click.call(()),
 
-            // Checkmark (white tick) — visible only when Checked
             if state == CheckState::Checked {
                 div {
                     style: "
@@ -221,7 +117,6 @@ fn HeaderCheckbox(state: CheckState, on_click: EventHandler<()>) -> Element {
                 }
             }
 
-            // Horizontal dash — visible only when Indeterminate
             if state == CheckState::Indeterminate {
                 div {
                     style: "
@@ -252,7 +147,6 @@ fn FileRow(
         tr {
             class: if entry.checked { "selected" } else { "" },
 
-            // Col 0 — checkbox
             td {
                 class: "fw-col-check",
                 style: "text-align: center;",
@@ -291,14 +185,12 @@ fn FileRow(
                 }
             }
 
-            // Col 1 — file path (clickable → view diff)
             td {
                 class: "fw-col-path clickable",
                 onclick: move |_| on_view_diff.call(path_for_diff.clone()),
                 "{entry.path}"
             }
 
-            // Col 2 — status
             td {
                 class: "fw-col-status clickable",
                 onclick: {
@@ -308,7 +200,6 @@ fn FileRow(
                 "{entry.status}"
             }
 
-            // Col 3 — last modified
             td {
                 class: "fw-col-modified clickable",
                 onclick: {
@@ -318,7 +209,6 @@ fn FileRow(
                 "{entry.modified}"
             }
 
-            // Col 4 — delete button
             td {
                 class: "fw-col-action",
                 style: "text-align: center;",
