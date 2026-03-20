@@ -1,5 +1,4 @@
 /// Global application stylesheet — dark theme.
-/// Mirrors `Styles::getMainStylesheet()` from styles.cpp.
 pub const GLOBAL_CSS: &str = r#"
 *, *::before, *::after {
     box-sizing: border-box;
@@ -11,7 +10,7 @@ body, html {
     height: 100%;
     font-family: "Segoe UI", system-ui, sans-serif;
     font-size: 14px;
-    background-color: #121212;
+    background-color: #0D0D0D;
     color: #E5E5E5;
 }
 
@@ -20,33 +19,92 @@ body, html {
     display: flex;
     flex-direction: column;
     height: 100vh;
-    background-color: #121212;
+    background-color: #0D0D0D;
 }
 
+/* ── Menu bar ───────────────────────────────────────────── */
+.menu-bar {
+    display: flex;
+    align-items: center;
+    background-color: #111111;
+    border-bottom: 1px solid #232323;
+    padding: 0 4px;
+    height: 26px;
+    flex-shrink: 0;
+}
+
+.menu-item {
+    background: none;
+    border: none;
+    color: #D8D8D8;
+    padding: 3px 14px;
+    cursor: pointer;
+    font-size: 13px;
+    height: 100%;
+}
+.menu-item:hover { background-color: #2A2A2A; }
+
+/* ── Toolbar ────────────────────────────────────────────── */
 .toolbar {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 6px 14px;
-    background-color: #1C1C1C;
-    border-bottom: 1px solid #2A2A2A;
+    justify-content: space-between;
+    padding: 5px 10px;
+    background-color: #161616;
+    border-bottom: 1px solid #232323;
+    flex-shrink: 0;
+    gap: 8px;
 }
 
-.toolbar-title {
-    flex: 1;
-    font-weight: 700;
-    font-size: 15px;
-    color: #EDEDED;
-}
-
-.main-content {
-    flex: 1;
-    overflow: hidden;
+.toolbar-left {
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
 }
 
-/* ── Buttons ────────────────────────────────────────────── */
+.toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.label-text {
+    color: #C8C8C8;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+/* ── System selector tabs ───────────────────────────────── */
+.sys-btn {
+    background-color: #222222;
+    color: #B0B0B0;
+    border: 1px solid #3A3A3A;
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.sys-btn:hover { background-color: #2E2E2E; }
+
+.sys-btn-on {
+    background-color: #17213A;
+    border-color: #1A56DB;
+    color: #E8E8E8;
+}
+.sys-btn-on:hover { background-color: #1C2848; }
+
+/* ── Status dots ────────────────────────────────────────── */
+.status-dot-label {
+    color: #888888;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+/* ── Toolbar buttons ────────────────────────────────────── */
 .btn {
     background-color: #2A2A2A;
     color: #FAFAFA;
@@ -56,9 +114,24 @@ body, html {
     font-weight: 600;
     cursor: pointer;
     font-size: 13px;
+    white-space: nowrap;
 }
 .btn:hover  { background-color: #3A3A3A; }
 .btn:active { background-color: #4A4A4A; }
+
+.btn-start {
+    background-color: #1E3A5F;
+    border-color: #1A56DB;
+    color: #E8E8E8;
+}
+.btn-start:hover { background-color: #254878; }
+
+.btn-stop {
+    background-color: #7B1818;
+    border-color: #C62828;
+    color: #fff;
+}
+.btn-stop:hover { background-color: #922020; }
 
 .btn-danger {
     background-color: #C62828;
@@ -74,6 +147,28 @@ body, html {
 .btn-danger:hover  { background-color: #D32F2F; }
 .btn-danger:active { background-color: #B71C1C; }
 
+/* ── System action buttons (Copy / Copy Send / Assign To) ── */
+.btn-action {
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 0;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    width: 90px;
+    text-align: center;
+}
+
+.btn-copy          { background-color: #1A56DB; }
+.btn-copy:hover    { background-color: #1D4ED8; }
+
+.btn-copy-send     { background-color: #1A7A2E; }
+.btn-copy-send:hover { background-color: #1F9136; }
+
+.btn-assign        { background-color: #6B21A8; }
+.btn-assign:hover  { background-color: #7E22CE; }
+
 /* ── Text inputs ─────────────────────────────────────────── */
 input[type="text"],
 input[type="password"] {
@@ -88,7 +183,7 @@ input[type="password"] {
 }
 input[type="text"]:focus,
 input[type="password"]:focus {
-    border-color: #0B57D0;
+    border-color: #1A56DB;
     background-color: #222222;
 }
 
@@ -114,8 +209,8 @@ input[type="password"]:focus {
     flex-shrink: 0;
 }
 .checkbox-label input[type="checkbox"]:checked {
-    background-color: #0B57D0;
-    border-color: #0B57D0;
+    background-color: #1A56DB;
+    border-color: #1A56DB;
 }
 .checkbox-label input[type="checkbox"]:checked::after {
     content: "";
@@ -126,17 +221,80 @@ input[type="password"]:focus {
     border-bottom: 2px solid #fff;
     transform: rotate(-45deg);
 }
-.checkbox-label input[type="checkbox"]:indeterminate {
-    background-color: #2A2A2A;
-    border-color: #0B57D0;
+
+/* ── Main scrollable area ────────────────────────────────── */
+.main-content {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    padding: 6px;
+    gap: 8px;
 }
-.checkbox-label input[type="checkbox"]:indeterminate::after {
-    content: "";
-    position: absolute;
-    left: 3px; top: 7px;
-    width: 10px; height: 2px;
-    background-color: #0B57D0;
-    border-radius: 1px;
+
+/* ── System panel ────────────────────────────────────────── */
+.system-panel {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    height: 270px;
+    border: 1px solid #252525;
+    border-radius: 4px;
+    background-color: #111111;
+    overflow: hidden;
+}
+
+.system-desc-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 10px;
+    border-bottom: 1px solid #252525;
+    background-color: #141414;
+    flex-shrink: 0;
+}
+
+.system-desc-label {
+    color: #C0C0C0;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.system-desc-input {
+    flex: 1;
+    background-color: #0F0F0F;
+    color: #F3F3F3;
+    border: 1px solid #2E2E2E;
+    border-radius: 3px;
+    padding: 4px 8px;
+    font-size: 13px;
+    outline: none;
+}
+.system-desc-input:focus { border-color: #1A56DB; }
+
+.system-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+.system-table-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+}
+
+.system-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 7px;
+    background-color: #131313;
+    border-left: 1px solid #252525;
+    flex-shrink: 0;
+    justify-content: flex-start;
 }
 
 /* ── Dialog overlay ──────────────────────────────────────── */
@@ -218,7 +376,7 @@ label {
     font-size: 13px;
 }
 
-/* ── Inline dialog (add system prompt) ───────────────────── */
+/* ── Mini dialog (add system) ────────────────────────────── */
 .mini-dialog-overlay {
     position: fixed;
     inset: 0;
@@ -256,56 +414,53 @@ label {
 .fw-table-wrapper {
     flex: 1;
     overflow: auto;
-    background-color: #1A1A1A;
-    border: 1px solid #333;
+    background-color: #111111;
+    border: 1px solid #252525;
 }
 
 .fw-table {
     width: 100%;
     border-collapse: collapse;
     table-layout: fixed;
-    background-color: #1A1A1A;
-    color: #F7F7F7;
+    background-color: #111111;
+    color: #E8E8E8;
 }
 
 .fw-table th {
-    background-color: #212121;
-    color: #E0E0E0;
+    background-color: #181818;
+    color: #D0D0D0;
     padding: 6px 8px;
-    border: 1px solid #333;
+    border-bottom: 1px solid #2A2A2A;
     font-weight: 600;
     font-size: 13px;
     text-align: left;
     white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 1;
 }
 
 .fw-table td {
     padding: 4px 8px;
-    border-bottom: 1px solid #2A2A2A;
+    border-bottom: 1px solid #1E1E1E;
     font-size: 13px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.fw-table tr:hover td { background-color: #252525; }
-.fw-table tr.selected td { background-color: #2A2A2A; }
+.fw-table tr:hover td { background-color: #1A1A1A; }
+.fw-table tr.selected td { background-color: #1C1C2A; }
 
 .fw-table td.clickable { cursor: pointer; }
 
-/* Column widths */
 .fw-col-check    { width: 34px;  text-align: center; }
 .fw-col-path     { width: auto;  }
 .fw-col-status   { width: 120px; }
 .fw-col-modified { width: 160px; }
 .fw-col-action   { width: 80px;  text-align: center; }
 
-/* Header checkbox cell */
-.fw-table th.fw-col-check {
-    text-align: center;
-}
-
-/* Row checkbox */
+.fw-table th.fw-col-check { text-align: center; }
 .fw-table td.fw-col-check {
     display: flex;
     align-items: center;
@@ -353,7 +508,7 @@ label {
 .settings-table td input[type="text"]:focus {
     background-color: #252525;
     border-radius: 2px;
-    outline: 1px solid #0B57D0;
+    outline: 1px solid #1A56DB;
 }
 
 .table-buttons {
@@ -362,7 +517,7 @@ label {
     margin-top: 6px;
 }
 
-/* ── System row ──────────────────────────────────────────── */
+/* ── System row (settings dialog) ────────────────────────── */
 .system-rows {
     display: flex;
     flex-direction: column;
@@ -377,7 +532,7 @@ label {
 
 /* ── Scrollbar styling (WebKit) ──────────────────────────── */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: #1A1A1A; }
-::-webkit-scrollbar-thumb { background: #3A3A3A; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #4A4A4A; }
+::-webkit-scrollbar-track { background: #111111; }
+::-webkit-scrollbar-thumb { background: #333333; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #444444; }
 "#;

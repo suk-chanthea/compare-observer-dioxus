@@ -386,39 +386,57 @@ fn SystemRow(
                 input {
                     r#type: "text",
                     value: "{data.name}",
-                    oninput: move |e| on_change.call(SystemConfigData { name: e.value(), ..data.clone() }),
+                    oninput: {
+                        let data = data.clone();
+                        move |e: Event<FormData>| on_change.call(SystemConfigData { name: e.value(), ..data.clone() })
+                    },
                 }
                 label { "Source:" }
                 input {
                     r#type: "text",
                     value: "{data.source}",
-                    oninput: move |e| on_change.call(SystemConfigData { source: e.value(), ..data.clone() }),
+                    oninput: {
+                        let data = data.clone();
+                        move |e: Event<FormData>| on_change.call(SystemConfigData { source: e.value(), ..data.clone() })
+                    },
                 }
 
                 label { "Destination:" }
                 input {
                     r#type: "text",
                     value: "{data.destination}",
-                    oninput: move |e| on_change.call(SystemConfigData { destination: e.value(), ..data.clone() }),
+                    oninput: {
+                        let data = data.clone();
+                        move |e: Event<FormData>| on_change.call(SystemConfigData { destination: e.value(), ..data.clone() })
+                    },
                 }
                 label { "Git:" }
                 input {
                     r#type: "text",
                     value: "{data.git}",
-                    oninput: move |e| on_change.call(SystemConfigData { git: e.value(), ..data.clone() }),
+                    oninput: {
+                        let data = data.clone();
+                        move |e: Event<FormData>| on_change.call(SystemConfigData { git: e.value(), ..data.clone() })
+                    },
                 }
 
                 label { "Backup:" }
                 input {
                     r#type: "text",
                     value: "{data.backup}",
-                    oninput: move |e| on_change.call(SystemConfigData { backup: e.value(), ..data.clone() }),
+                    oninput: {
+                        let data = data.clone();
+                        move |e: Event<FormData>| on_change.call(SystemConfigData { backup: e.value(), ..data.clone() })
+                    },
                 }
                 label { "Assign:" }
                 input {
                     r#type: "text",
                     value: "{data.assign}",
-                    oninput: move |e| on_change.call(SystemConfigData { assign: e.value(), ..data.clone() }),
+                    oninput: {
+                        let data = data.clone();
+                        move |e: Event<FormData>| on_change.call(SystemConfigData { assign: e.value(), ..data.clone() })
+                    },
                 }
             }
         }
