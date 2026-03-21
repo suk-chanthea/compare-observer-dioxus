@@ -77,35 +77,28 @@ pub fn SettingsDialog(
         systems: sys_list.read().clone(),
         without_rows: without.read().clone(),
         except_rows: except.read().clone(),
+        selected_systems: Vec::new(), // filled in by App's on_save handler
     };
 
-    // ── Remote defaults loader (mirrors loadRemoteRuleDefaults) ───────────────
+    // ── Remote defaults loader ────────────────────────────────────────────────
+    // Falls back: URL → local log_sys.json → built-in defaults (never fails).
     let load_remote = move |_| {
         let url = api_url_input.read().clone();
         let count = sys_count();
 
         spawn(async move {
-            match rules_api::fetch_rules(&url, count).await {
-                Err(msg) => {
-                    api_status.set(Some(msg));
-                }
-                Ok(rules) => {
-                    let mut updated = false;
-                    if let Some(rows) = rules.without {
-                        without.set(rows);
-                        updated = true;
-                    }
-                    if let Some(rows) = rules.except {
-                        except.set(rows);
-                        updated = true;
-                    }
-                    api_status.set(Some(if updated {
-                        "Rules loaded from API.".into()
-                    } else {
-                        "No valid rules in API response.".into()
-                    }));
-                }
+            // fetch_rules always returns Ok — it uses built-in defaults as last resort
+            let rules = rules_api::fetch_rules(&url, count)
+                .await
+                .unwrap_or_else(|_| unreachable!());
+
+            if let Some(rows) = rules.without {
+                without.set(rows);
             }
+            if let Some(rows) = rules.except {
+                except.set(rows);
+            }
+            api_status.set(Some(format!("✅ Rules loaded from: {}", rules.source)));
         });
     };
 

@@ -97,6 +97,14 @@ body, html {
 }
 .sys-btn-on:hover { background-color: #1C2848; }
 
+/* Locked state: watching is active, tabs cannot be toggled */
+.sys-btn-locked,
+.sys-btn-locked:hover {
+    opacity: 0.55;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
 /* ── Status dots ────────────────────────────────────────── */
 .status-dot-label {
     color: #888888;
@@ -308,13 +316,16 @@ input[type="password"]:focus {
     z-index: 1000;
 }
 
+/* Base dialog — all popups share these; individual classes override size */
 .dialog {
     background-color: #151515;
     color: #EDEDED;
     border-radius: 8px;
     box-shadow: 0 8px 32px rgba(0,0,0,0.6);
-    min-width: 1000px;
-    max-height: 90vh;
+    width: 88vw;
+    max-width: 88vw;
+    height: 88vh;
+    max-height: 88vh;
     display: flex;
     flex-direction: column;
 }
@@ -462,17 +473,44 @@ label {
 
 .fw-table th.fw-col-check { text-align: center; }
 .fw-table td.fw-col-check {
+    cursor: pointer;
+    text-align: center;
+    vertical-align: middle;
+}
+/* Small square checkbox indicator, centered in cell */
+.fw-checkbox {
+    width: 12px;
+    height: 12px;
+    border: 1px solid #555555;
+    border-radius: 4px;
+    background-color: #2A2A2A;
+    margin: 0 auto;
     display: flex;
     align-items: center;
     justify-content: center;
+    pointer-events: none;
+}
+.fw-checkbox.fw-checkbox-on {
+    border-color: #0B57D0;
+    background-color: #0B57D0;
+}
+.fw-check-mark {
+    width: 6px;
+    height: 4px;
+    border-left: 1.5px solid #fff;
+    border-bottom: 1.5px solid #fff;
+    transform: rotate(-45deg) translate(0px, -1px);
 }
 
 /* ── Settings tables (without / except) ──────────────────── */
 .settings-table-wrapper {
-    min-height: 240px;
+    /* Cap height so the table scrolls rather than growing the dialog */
+    min-height: 140px;
+    max-height: 26vh;
     overflow: auto;
     border: 1px solid #333;
     border-radius: 4px;
+    flex-shrink: 0;
 }
 
 .settings-table {
@@ -486,6 +524,9 @@ label {
     background-color: #212121;
     color: #E0E0E0;
     padding: 6px 8px;
+    position: sticky;
+    top: 0;
+    z-index: 1;
     border: 1px solid #333;
     font-size: 13px;
     text-align: center;
@@ -529,6 +570,462 @@ label {
     gap: 8px;
     margin-bottom: 4px;
 }
+
+/* ── Log dialog — inherits 88vw × 88vh from .dialog ─────── */
+.log-dialog { /* no extra size overrides needed */ }
+
+.log-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    border-bottom: 1px solid #2A2A2A;
+    flex-shrink: 0;
+}
+
+.log-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #EDEDED;
+}
+
+.log-close-btn {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+.log-close-btn:hover { color: #fff; background-color: #333; }
+
+.log-table-wrapper {
+    flex: 1;
+    overflow: auto;
+    padding: 0 4px;
+    min-height: 300px;
+    max-height: 60vh;
+}
+
+.log-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.log-table th {
+    background-color: #1C1C1C;
+    color: #D0D0D0;
+    padding: 6px 10px;
+    border-bottom: 1px solid #2A2A2A;
+    text-align: left;
+    position: sticky;
+    top: 0;
+}
+.log-table td {
+    padding: 4px 10px;
+    border-bottom: 1px solid #1A1A1A;
+    vertical-align: top;
+}
+.log-ts {
+    color: #888;
+    white-space: nowrap;
+    font-size: 12px;
+}
+
+/* ── Diff dialog — inherits 88vw × 88vh from .dialog ─────── */
+.diff-dialog {
+}
+
+.diff-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    border-bottom: 1px solid #2A2A2A;
+    flex-shrink: 0;
+}
+
+.diff-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.diff-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #EDEDED;
+    font-family: "Consolas", monospace;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 55vw;
+}
+
+.diff-change-count {
+    font-size: 12px;
+    color: #888;
+}
+
+.diff-nav-btn {
+    background: #2A2A2A;
+    border: 1px solid #3A3A3A;
+    color: #EDEDED;
+    border-radius: 4px;
+    width: 28px;
+    height: 24px;
+    font-size: 11px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+.diff-nav-btn:hover { background: #3A3A3A; }
+
+/* Column headers row */
+.diff-col-headers {
+    display: flex;
+    flex-shrink: 0;
+    border-bottom: 1px solid #2A2A2A;
+}
+
+.diff-col-hdr {
+    flex: 1;
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    background-color: #1A1A1A;
+    text-align: center;
+}
+.diff-col-hdr.old { color: #E57373; border-right: 1px solid #2A2A2A; }
+.diff-col-hdr.new { color: #81C784; }
+
+/* Split body — fills whatever height the .dialog gives it */
+.diff-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    background-color: #111;
+}
+
+/* Each half scrolls independently; JS keeps them in sync */
+.diff-pane {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: auto;
+}
+
+/* Thin divider between panes */
+.diff-divider {
+    width: 3px;
+    background-color: #2A2A2A;
+    flex-shrink: 0;
+    cursor: col-resize;
+}
+
+/* Diff table inside each pane */
+.diff-table {
+    border-collapse: collapse;
+    width: 100%;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.diff-lno {
+    width: 42px;
+    min-width: 42px;
+    text-align: right;
+    padding: 0 8px;
+    color: #555;
+    user-select: none;
+    border-right: 1px solid #252525;
+    vertical-align: top;
+    white-space: nowrap;
+}
+
+.diff-code {
+    padding: 0 10px;
+    vertical-align: top;
+    white-space: pre;
+    color: #D4D4D4;
+}
+.diff-code pre { margin: 0; padding: 0; font-family: inherit; font-size: inherit; }
+
+/* Row colours */
+.diff-row         { background-color: #111111; }
+.diff-row.diff-added   { background-color: #1A3A1A; }
+.diff-row.diff-removed { background-color: #3A1A1A; }
+.diff-row.diff-changed { background-color: #2A2A0A; }
+.diff-row.diff-empty   { background-color: #181818; opacity: 0.5; }
+
+.diff-row.diff-added   .diff-lno { color: #4CAF50; }
+.diff-row.diff-removed .diff-lno { color: #E57373; }
+.diff-row.diff-changed .diff-lno { color: #FFD54F; }
+
+/* ── Assign dialog — smaller popup, centred ─────────────── */
+.assign-dialog {
+    width: 50vw;
+    max-width: 50vw;
+    height: auto;
+    max-height: 70vh;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 20px 24px;
+}
+
+.assign-dialog h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #EDEDED;
+    margin-bottom: 4px;
+}
+
+.assign-dialog label {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.assign-dialog input,
+.assign-dialog textarea {
+    width: 100%;
+    background-color: #1B1B1B;
+    color: #F3F3F3;
+    border: 1px solid #343434;
+    border-radius: 4px;
+    padding: 6px 8px;
+    font-size: 13px;
+    outline: none;
+    resize: vertical;
+}
+
+.assign-dialog textarea { min-height: 80px; }
+
+.assign-dialog input:focus,
+.assign-dialog textarea:focus { border-color: #1A56DB; }
+
+/* ── Progress dialog (mirrors QProgressDialog) ───────────── */
+.progress-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.70);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+}
+
+.progress-dialog {
+    background-color: #1C1C1C;
+    border: 1px solid #3A3A3A;
+    border-radius: 8px;
+    padding: 24px 28px;
+    width: 44vw;
+    max-width: 44vw;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+}
+
+.progress-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #EDEDED;
+    text-align: center;
+}
+
+.progress-label {
+    font-size: 12px;
+    color: #999;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 18px;
+}
+
+.progress-bar-track {
+    background-color: #2A2A2A;
+    border: 1px solid #3A3A3A;
+    border-radius: 4px;
+    height: 18px;
+    overflow: hidden;
+    flex: 1;
+}
+
+.progress-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.progress-pct {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1A56DB;
+    min-width: 40px;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.progress-bar-fill {
+    background-color: #1A56DB;
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.15s ease;
+    min-width: 4px;
+}
+
+.progress-counts {
+    font-size: 12px;
+    color: #888;
+    text-align: center;
+}
+
+@keyframes pulse {
+    from { opacity: 0.5; }
+    to   { opacity: 1.0; }
+}
+
+@keyframes pulse-slide {
+    0%   { margin-left: 0;   width: 40%; }
+    50%  { margin-left: 30%; width: 40%; }
+    100% { margin-left: 60%; width: 40%; }
+}
+
+/* ── Close-while-watching confirm dialog ─────────────────── */
+.close-confirm-overlay {
+    z-index: 5000;
+}
+
+.close-confirm-dialog {
+    background-color: #1E1E1E;
+    border: 1px solid #C62828;
+    border-radius: 10px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.85);
+    width: 34vw;
+    max-width: 34vw;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 28px 32px 22px;
+    gap: 10px;
+}
+
+.close-confirm-icon {
+    font-size: 40px;
+    line-height: 1;
+    color: #EF5350;
+    margin-bottom: 4px;
+}
+
+.close-confirm-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #EDEDED;
+    text-align: center;
+    margin: 0;
+}
+
+.close-confirm-body {
+    font-size: 13px;
+    color: #AAAAAA;
+    text-align: center;
+    line-height: 1.7;
+    white-space: pre-line;
+    margin: 0;
+}
+
+.close-confirm-footer {
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.btn-danger {
+    background-color: #C62828;
+    border-color: #C62828;
+    color: #fff;
+}
+.btn-danger:hover { background-color: #B71C1C; border-color: #B71C1C; }
+
+/* ── Alert dialog ───────────────────────────────────────── */
+.alert-overlay {
+    z-index: 4000;   /* above everything else */
+}
+
+.alert-dialog {
+    background-color: #1E1E1E;
+    border: 1px solid #C8960C;
+    border-radius: 10px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.8);
+    width: 36vw;
+    max-width: 36vw;
+    height: auto;
+    max-height: 60vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    padding: 28px 32px 20px;
+}
+
+.alert-icon {
+    font-size: 38px;
+    line-height: 1;
+    margin-bottom: 14px;
+    color: #FFD54F;
+}
+
+.alert-body {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.alert-line {
+    font-size: 14px;
+    color: #EDEDED;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.alert-footer {
+    display: flex;
+    justify-content: center;
+}
+
+.alert-ok {
+    min-width: 90px;
+}
+
+/* ── Toast notification ─────────────────────────────────── */
+.toast-overlay {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 2000;
+    pointer-events: none;
+}
+
+.toast {
+    background-color: #2A2A2A;
+    border: 1px solid #3A3A3A;
+    border-radius: 6px;
+    padding: 12px 18px;
+    font-size: 13px;
+    color: #E0E0E0;
+    max-width: 360px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    pointer-events: auto;
+}
+.toast.toast-ok     { border-color: #1A7A2E; }
+.toast.toast-warn   { border-color: #C8960C; }
+.toast.toast-error  { border-color: #C62828; }
 
 /* ── Scrollbar styling (WebKit) ──────────────────────────── */
 ::-webkit-scrollbar { width: 8px; height: 8px; }

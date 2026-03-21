@@ -13,6 +13,31 @@ pub fn upsert_entry(entries: &mut Vec<FileEntry>, path: &str, status: &str) {
     }
 }
 
+/// Like `upsert_entry` but also sets the baseline `content` on NEW entries only.
+/// On subsequent updates the original baseline is preserved so diffs always
+/// compare against the content captured at watch-start — exactly like C++.
+pub fn upsert_watch_event(
+    entries: &mut Vec<FileEntry>,
+    path: &str,
+    status: &str,
+    baseline_content: Option<String>,
+) {
+    if let Some(e) = entries.iter_mut().find(|e| e.path == path) {
+        // Entry already in table: never downgrade "Created" to "Modified".
+        // A file that was newly created and then immediately written to should
+        // still show as "Created" so the user knows it didn't exist before.
+        if e.status != "Created" {
+            e.status = status.to_string();
+        }
+        e.modified = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    } else {
+        // New entry: attach baseline so the diff dialog can show old vs new
+        let mut e = FileEntry::new(path, status);
+        e.content = baseline_content;
+        entries.push(e);
+    }
+}
+
 /// Remove a file entry by path. Mirrors `removeFileEntry`.
 pub fn remove_entry(entries: &mut Vec<FileEntry>, path: &str) {
     entries.retain(|e| e.path != path);
